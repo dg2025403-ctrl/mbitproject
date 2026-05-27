@@ -1,7 +1,5 @@
 import streamlit as st
-import numpy as np
-import random
-import time
+import streamlit.components.v1 as components
 
 # 페이지 설정
 st.set_page_config(
@@ -10,13 +8,13 @@ st.set_page_config(
     layout="centered"
 )
 
-# 커스텀 CSS
+# 헤더 스타일
 st.markdown("""
     <style>
     .main-title {
         text-align: center;
         font-size: 3em;
-        background: linear-gradient(45deg, #6BCB77, #4D96FF, #FFD93D);
+        background: linear-gradient(45deg, #4CAF50, #8BC34A, #CDDC39);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         font-weight: bold;
@@ -28,206 +26,462 @@ st.markdown("""
         font-size: 1.1em;
         margin-bottom: 20px;
     }
-    .score-box {
-        background: linear-gradient(135deg, #FFE5EC 0%, #FFC2D1 100%);
-        border-radius: 15px;
-        padding: 15px;
-        text-align: center;
-        font-size: 1.3em;
-        font-weight: bold;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    }
-    .stButton button {
-        width: 100%;
-        height: 60px;
-        font-size: 1.5em;
-        border-radius: 10px;
-        font-weight: bold;
-    }
     </style>
 """, unsafe_allow_html=True)
 
-# 헤더
-st.markdown('<div class="main-title">🐍 스네이크 게임 🎮</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">🍎 사과를 먹고 뱀을 길게 키워보세요! 🌟</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">🐍 스네이크 게임 🍎</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">⌨️ 방향키 또는 WASD로 조작! 스페이스바로 시작! 🎮</div>', unsafe_allow_html=True)
 
-# 게임 설정
-BOARD_SIZE = 15
-EMOJI_EMPTY = "⬛"
-EMOJI_SNAKE_HEAD = "🟢"
-EMOJI_SNAKE_BODY = "🟩"
-EMOJI_FOOD = "🍎"
-EMOJI_WALL = "🟫"
+# 게임 HTML/CSS/JavaScript
+game_html = """
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    
+    body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #74b9ff 0%, #a29bfe 100%);
+        min-height: 600px;
+        font-family: 'Arial', sans-serif;
+        padding: 20px;
+    }
+    
+    .game-container {
+        background: white;
+        border-radius: 20px;
+        padding: 25px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        text-align: center;
+    }
+    
+    .score-board {
+        display: flex;
+        justify-content: space-around;
+        margin-bottom: 15px;
+        gap: 20px;
+    }
+    
+    .score-item {
+        background: linear-gradient(135deg, #ffeaa7, #fab1a0);
+        padding: 10px 20px;
+        border-radius: 12px;
+        font-size: 1.2em;
+        font-weight: bold;
+        color: #2d3436;
+        min-width: 120px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    
+    canvas {
+        background: #aad751;
+        border-radius: 15px;
+        box-shadow: inset 0 0 20px rgba(0,0,0,0.2);
+        display: block;
+    }
+    
+    .controls {
+        margin-top: 15px;
+        color: #636e72;
+        font-size: 0.95em;
+    }
+    
+    .game-message {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(45, 52, 54, 0.95);
+        color: white;
+        padding: 30px 50px;
+        border-radius: 20px;
+        font-size: 1.5em;
+        font-weight: bold;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        display: none;
+        z-index: 100;
+    }
+    
+    .game-message.show {
+        display: block;
+        animation: popIn 0.3s ease-out;
+    }
+    
+    @keyframes popIn {
+        0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+        100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    }
+    
+    .canvas-wrapper {
+        position: relative;
+        display: inline-block;
+    }
+    
+    .btn {
+        background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 25px;
+        font-size: 1.1em;
+        font-weight: bold;
+        cursor: pointer;
+        margin-top: 15px;
+        box-shadow: 0 5px 15px rgba(108, 92, 231, 0.4);
+        transition: all 0.2s;
+    }
+    
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(108, 92, 231, 0.6);
+    }
+    
+    .speed-control {
+        margin-top: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+    
+    .speed-control label {
+        font-weight: bold;
+        color: #2d3436;
+    }
+</style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="score-board">
+            <div class="score-item">🏆 점수: <span id="score">0</span></div>
+            <div class="score-item">⭐ 최고: <span id="highScore">0</span></div>
+        </div>
+        
+        <div class="canvas-wrapper">
+            <canvas id="gameCanvas" width="400" height="400"></canvas>
+            <div id="gameMessage" class="game-message">
+                <div id="messageText">🎮 스페이스바를 눌러 시작!</div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            ⌨️ <b>방향키</b> 또는 <b>WASD</b>로 이동 | <b>스페이스바</b>로 시작/일시정지
+        </div>
+        
+        <div class="speed-control">
+            <label>⚡ 속도:</label>
+            <input type="range" id="speedSlider" min="50" max="200" value="120" step="10">
+            <span id="speedValue">보통</span>
+        </div>
+        
+        <button class="btn" onclick="resetGame()">🔄 새 게임</button>
+    </div>
 
-# 세션 상태 초기화
-def init_game():
-    st.session_state.snake = [(7, 7), (7, 6), (7, 5)]  # (row, col)
-    st.session_state.direction = "RIGHT"
-    st.session_state.food = generate_food(st.session_state.snake)
-    st.session_state.score = 0
-    st.session_state.game_over = False
-    st.session_state.high_score = st.session_state.get('high_score', 0)
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const scoreEl = document.getElementById('score');
+const highScoreEl = document.getElementById('highScore');
+const messageEl = document.getElementById('gameMessage');
+const messageTextEl = document.getElementById('messageText');
+const speedSlider = document.getElementById('speedSlider');
+const speedValueEl = document.getElementById('speedValue');
 
-def generate_food(snake):
-    """뱀이 없는 위치에 음식 생성"""
-    while True:
-        food = (random.randint(0, BOARD_SIZE-1), random.randint(0, BOARD_SIZE-1))
-        if food not in snake:
-            return food
+const GRID_SIZE = 20;
+const TILE_COUNT = canvas.width / GRID_SIZE;
 
-def move_snake():
-    """뱀을 한 칸 이동"""
-    if st.session_state.game_over:
-        return
-    
-    head = st.session_state.snake[0]
-    direction = st.session_state.direction
-    
-    if direction == "UP":
-        new_head = (head[0] - 1, head[1])
-    elif direction == "DOWN":
-        new_head = (head[0] + 1, head[1])
-    elif direction == "LEFT":
-        new_head = (head[0], head[1] - 1)
-    else:  # RIGHT
-        new_head = (head[0], head[1] + 1)
-    
-    # 벽 충돌 체크
-    if (new_head[0] < 0 or new_head[0] >= BOARD_SIZE or 
-        new_head[1] < 0 or new_head[1] >= BOARD_SIZE):
-        st.session_state.game_over = True
-        return
-    
-    # 자기 몸 충돌 체크
-    if new_head in st.session_state.snake:
-        st.session_state.game_over = True
-        return
-    
-    # 뱀 이동
-    st.session_state.snake.insert(0, new_head)
-    
-    # 음식 먹기
-    if new_head == st.session_state.food:
-        st.session_state.score += 10
-        if st.session_state.score > st.session_state.high_score:
-            st.session_state.high_score = st.session_state.score
-        st.session_state.food = generate_food(st.session_state.snake)
-    else:
-        st.session_state.snake.pop()  # 꼬리 제거
+let snake = [{x: 10, y: 10}];
+let velocity = {x: 0, y: 0};
+let food = {x: 15, y: 15};
+let score = 0;
+let highScore = parseInt(localStorage.getItem('snakeHighScore') || '0');
+let gameRunning = false;
+let gamePaused = false;
+let gameOver = false;
+let gameSpeed = 120;
+let lastTime = 0;
+let nextVelocity = {x: 0, y: 0};
 
-def change_direction(new_direction):
-    """방향 전환 (반대 방향은 불가)"""
-    opposites = {"UP": "DOWN", "DOWN": "UP", "LEFT": "RIGHT", "RIGHT": "LEFT"}
-    if opposites.get(st.session_state.direction) != new_direction:
-        st.session_state.direction = new_direction
+highScoreEl.textContent = highScore;
 
-def render_board():
-    """게임 보드를 이모지로 렌더링"""
-    board = [[EMOJI_EMPTY for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
-    
-    # 음식 표시
-    fr, fc = st.session_state.food
-    board[fr][fc] = EMOJI_FOOD
-    
-    # 뱀 표시
-    for i, (r, c) in enumerate(st.session_state.snake):
-        if i == 0:
-            board[r][c] = EMOJI_SNAKE_HEAD
-        else:
-            board[r][c] = EMOJI_SNAKE_BODY
-    
-    # 보드 문자열 생성
-    board_str = "\n".join("".join(row) for row in board)
-    return board_str
+// 속도 슬라이더
+speedSlider.addEventListener('input', (e) => {
+    gameSpeed = 250 - parseInt(e.target.value);
+    if (gameSpeed < 80) speedValueEl.textContent = '🔥 빠름';
+    else if (gameSpeed < 130) speedValueEl.textContent = '⚡ 보통';
+    else speedValueEl.textContent = '🐢 느림';
+});
 
-# 게임 초기화
-if 'snake' not in st.session_state:
-    init_game()
+function generateFood() {
+    while (true) {
+        food = {
+            x: Math.floor(Math.random() * TILE_COUNT),
+            y: Math.floor(Math.random() * TILE_COUNT)
+        };
+        // 뱀 몸과 겹치지 않게
+        let onSnake = snake.some(seg => seg.x === food.x && seg.y === food.y);
+        if (!onSnake) break;
+    }
+}
 
-# 점수 표시
-col1, col2 = st.columns(2)
-with col1:
-    st.markdown(f'<div class="score-box">🏆 점수: {st.session_state.score}</div>', unsafe_allow_html=True)
-with col2:
-    st.markdown(f'<div class="score-box">⭐ 최고점: {st.session_state.high_score}</div>', unsafe_allow_html=True)
+function drawGame() {
+    // 배경 - 체크무늬
+    for (let i = 0; i < TILE_COUNT; i++) {
+        for (let j = 0; j < TILE_COUNT; j++) {
+            ctx.fillStyle = (i + j) % 2 === 0 ? '#aad751' : '#a2d149';
+            ctx.fillRect(i * GRID_SIZE, j * GRID_SIZE, GRID_SIZE, GRID_SIZE);
+        }
+    }
+    
+    // 음식 (사과)
+    ctx.fillStyle = '#e74c3c';
+    ctx.beginPath();
+    ctx.arc(
+        food.x * GRID_SIZE + GRID_SIZE/2,
+        food.y * GRID_SIZE + GRID_SIZE/2,
+        GRID_SIZE/2 - 2,
+        0, Math.PI * 2
+    );
+    ctx.fill();
+    // 사과 잎
+    ctx.fillStyle = '#27ae60';
+    ctx.fillRect(
+        food.x * GRID_SIZE + GRID_SIZE/2 - 2,
+        food.y * GRID_SIZE + 2,
+        4, 5
+    );
+    
+    // 뱀 그리기
+    snake.forEach((segment, index) => {
+        if (index === 0) {
+            // 머리
+            ctx.fillStyle = '#4a69bd';
+            ctx.fillRect(
+                segment.x * GRID_SIZE + 1,
+                segment.y * GRID_SIZE + 1,
+                GRID_SIZE - 2, GRID_SIZE - 2
+            );
+            // 눈
+            ctx.fillStyle = 'white';
+            let eyeOffsetX1, eyeOffsetY1, eyeOffsetX2, eyeOffsetY2;
+            if (velocity.x === 1) {
+                eyeOffsetX1 = 13; eyeOffsetY1 = 5;
+                eyeOffsetX2 = 13; eyeOffsetY2 = 13;
+            } else if (velocity.x === -1) {
+                eyeOffsetX1 = 3; eyeOffsetY1 = 5;
+                eyeOffsetX2 = 3; eyeOffsetY2 = 13;
+            } else if (velocity.y === -1) {
+                eyeOffsetX1 = 5; eyeOffsetY1 = 3;
+                eyeOffsetX2 = 13; eyeOffsetY2 = 3;
+            } else {
+                eyeOffsetX1 = 5; eyeOffsetY1 = 13;
+                eyeOffsetX2 = 13; eyeOffsetY2 = 13;
+            }
+            ctx.fillRect(segment.x * GRID_SIZE + eyeOffsetX1, segment.y * GRID_SIZE + eyeOffsetY1, 3, 3);
+            ctx.fillRect(segment.x * GRID_SIZE + eyeOffsetX2, segment.y * GRID_SIZE + eyeOffsetY2, 3, 3);
+        } else {
+            // 몸통 - 그라데이션 효과
+            const ratio = index / snake.length;
+            const r = Math.floor(74 - ratio * 20);
+            const g = Math.floor(105 - ratio * 20);
+            const b = Math.floor(189 - ratio * 40);
+            ctx.fillStyle = `rgb(${r},${g},${b})`;
+            ctx.fillRect(
+                segment.x * GRID_SIZE + 2,
+                segment.y * GRID_SIZE + 2,
+                GRID_SIZE - 4, GRID_SIZE - 4
+            );
+        }
+    });
+}
 
-st.markdown("---")
+function updateGame() {
+    // 방향 적용 (180도 회전 방지)
+    if (nextVelocity.x !== -velocity.x || nextVelocity.y !== -velocity.y) {
+        velocity = {...nextVelocity};
+    }
+    
+    if (velocity.x === 0 && velocity.y === 0) return;
+    
+    const head = {x: snake[0].x + velocity.x, y: snake[0].y + velocity.y};
+    
+    // 벽 충돌
+    if (head.x < 0 || head.x >= TILE_COUNT || head.y < 0 || head.y >= TILE_COUNT) {
+        endGame();
+        return;
+    }
+    
+    // 자기 몸 충돌
+    if (snake.some(seg => seg.x === head.x && seg.y === head.y)) {
+        endGame();
+        return;
+    }
+    
+    snake.unshift(head);
+    
+    // 음식 먹기
+    if (head.x === food.x && head.y === food.y) {
+        score += 10;
+        scoreEl.textContent = score;
+        if (score > highScore) {
+            highScore = score;
+            highScoreEl.textContent = highScore;
+            localStorage.setItem('snakeHighScore', highScore);
+        }
+        generateFood();
+    } else {
+        snake.pop();
+    }
+}
 
-# 게임 보드 표시
-board_placeholder = st.empty()
-board_str = render_board()
-board_placeholder.markdown(
-    f"<div style='font-size:25px; line-height:1; text-align:center; letter-spacing:-2px; font-family:monospace;'>{board_str.replace(chr(10), '<br>')}</div>",
-    unsafe_allow_html=True
-)
+function gameLoop(currentTime) {
+    if (!gameRunning || gamePaused || gameOver) {
+        drawGame();
+        return;
+    }
+    
+    if (currentTime - lastTime >= gameSpeed) {
+        updateGame();
+        lastTime = currentTime;
+    }
+    
+    drawGame();
+    requestAnimationFrame(gameLoop);
+}
 
-st.markdown("---")
+function startGame() {
+    if (gameOver) {
+        resetGame();
+        return;
+    }
+    if (!gameRunning) {
+        gameRunning = true;
+        gamePaused = false;
+        messageEl.classList.remove('show');
+        if (velocity.x === 0 && velocity.y === 0) {
+            nextVelocity = {x: 1, y: 0};
+        }
+        lastTime = performance.now();
+        requestAnimationFrame(gameLoop);
+    } else {
+        gamePaused = !gamePaused;
+        if (gamePaused) {
+            messageTextEl.innerHTML = '⏸️ 일시정지<br><small>스페이스로 계속</small>';
+            messageEl.classList.add('show');
+        } else {
+            messageEl.classList.remove('show');
+            lastTime = performance.now();
+            requestAnimationFrame(gameLoop);
+        }
+    }
+}
 
-# 게임 오버 메시지
-if st.session_state.game_over:
-    st.error(f"💥 게임 오버! 최종 점수: {st.session_state.score}점 💥")
-    if st.button("🔄 다시 시작하기!", use_container_width=True):
-        init_game()
-        st.rerun()
-else:
-    # 방향 조작 버튼
-    st.markdown("### 🎮 방향을 선택하세요!")
+function endGame() {
+    gameRunning = false;
+    gameOver = true;
+    messageTextEl.innerHTML = `💥 게임 오버!<br>🏆 ${score}점<br><small>스페이스로 다시 시작</small>`;
+    messageEl.classList.add('show');
+}
+
+function resetGame() {
+    snake = [{x: 10, y: 10}];
+    velocity = {x: 0, y: 0};
+    nextVelocity = {x: 0, y: 0};
+    score = 0;
+    scoreEl.textContent = 0;
+    gameRunning = false;
+    gamePaused = false;
+    gameOver = false;
+    generateFood();
+    messageTextEl.innerHTML = '🎮 스페이스바로 시작!<br><small>방향키로 조작</small>';
+    messageEl.classList.add('show');
+    drawGame();
+}
+
+// 키보드 이벤트
+document.addEventListener('keydown', (e) => {
+    const key = e.key.toLowerCase();
     
-    col1, col2, col3 = st.columns([1, 1, 1])
-    with col2:
-        if st.button("⬆️ 위", key="up"):
-            change_direction("UP")
-            move_snake()
-            st.rerun()
+    // 스페이스바 - 시작/일시정지
+    if (e.key === ' ') {
+        e.preventDefault();
+        startGame();
+        return;
+    }
     
-    col1, col2, col3 = st.columns([1, 1, 1])
-    with col1:
-        if st.button("⬅️ 왼쪽", key="left"):
-            change_direction("LEFT")
-            move_snake()
-            st.rerun()
-    with col2:
-        if st.button("🍎 직진", key="forward"):
-            move_snake()
-            st.rerun()
-    with col3:
-        if st.button("➡️ 오른쪽", key="right"):
-            change_direction("RIGHT")
-            move_snake()
-            st.rerun()
+    if (!gameRunning || gamePaused || gameOver) return;
     
-    col1, col2, col3 = st.columns([1, 1, 1])
-    with col2:
-        if st.button("⬇️ 아래", key="down"):
-            change_direction("DOWN")
-            move_snake()
-            st.rerun()
-    
-    st.markdown("---")
-    
-    # 자동 진행 모드
-    st.markdown("### 🤖 자동 진행 모드")
-    auto_play = st.checkbox("자동으로 직진하기 (방향만 바꿔주세요!)")
-    speed = st.slider("⚡ 속도", 0.1, 1.0, 0.5, 0.1)
-    
-    if auto_play and not st.session_state.game_over:
-        time.sleep(speed)
-        move_snake()
-        st.rerun()
+    // 방향키 + WASD
+    if ((e.key === 'ArrowUp' || key === 'w') && velocity.y !== 1) {
+        nextVelocity = {x: 0, y: -1};
+        e.preventDefault();
+    } else if ((e.key === 'ArrowDown' || key === 's') && velocity.y !== -1) {
+        nextVelocity = {x: 0, y: 1};
+        e.preventDefault();
+    } else if ((e.key === 'ArrowLeft' || key === 'a') && velocity.x !== 1) {
+        nextVelocity = {x: -1, y: 0};
+        e.preventDefault();
+    } else if ((e.key === 'ArrowRight' || key === 'd') && velocity.x !== -1) {
+        nextVelocity = {x: 1, y: 0};
+        e.preventDefault();
+    }
+});
+
+// 캔버스 클릭 시 포커스
+canvas.addEventListener('click', () => {
+    canvas.focus();
+});
+
+// 초기 화면
+generateFood();
+drawGame();
+messageEl.classList.add('show');
+
+// iframe 포커스 자동 설정
+window.focus();
+document.body.tabIndex = 0;
+document.body.focus();
+</script>
+</body>
+</html>
+"""
+
+# 게임 실행
+components.html(game_html, height=650)
+
+# 안내 메시지
+st.info("💡 **팁**: 게임이 작동하지 않으면 게임 화면을 한 번 **클릭**한 후 키를 눌러주세요!")
 
 # 게임 설명
-with st.expander("📖 게임 방법"):
+with st.expander("📖 게임 방법 보기"):
     st.markdown("""
     ### 🎯 게임 규칙
-    - 🟢 **초록 머리**가 뱀의 머리예요!
-    - 🍎 **사과**를 먹으면 10점을 얻고 뱀이 길어져요!
-    - 🟫 **벽**에 부딪히면 게임 오버! 💥
+    - 🍎 **빨간 사과**를 먹으면 10점을 얻고 뱀이 길어져요!
+    - 🧱 **벽**에 부딪히면 게임 오버! 💥
     - 🐍 **자기 몸**에 부딪혀도 게임 오버! 😱
     
     ### 🎮 조작법
-    - **방향 버튼**: 뱀의 방향을 바꿔요
-    - **직진 버튼**: 현재 방향으로 한 칸 이동
-    - **자동 진행**: 체크하면 자동으로 움직여요!
+    | 키 | 동작 |
+    |---|---|
+    | ⬆️ ⬇️ ⬅️ ➡️ 또는 **WASD** | 방향 조작 |
+    | **스페이스바** | 시작 / 일시정지 |
+    | **속도 슬라이더** | 게임 속도 조절 |
+    | **새 게임 버튼** | 게임 리셋 |
+    
+    ### ✨ 특징
+    - 🏆 **최고 점수 저장**: 브라우저에 자동 저장됩니다!
+    - 🎨 **체크무늬 보드**: 진짜 구글 스네이크처럼!
+    - 👀 **눈이 있는 뱀**: 방향에 따라 눈도 움직여요!
+    - 🌈 **그라데이션 몸통**: 머리부터 꼬리까지 색이 변해요!
     """)
 
 # 푸터
