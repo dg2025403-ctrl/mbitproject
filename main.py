@@ -1,14 +1,12 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
-# 페이지 설정
 st.set_page_config(
     page_title="🐍 스네이크 게임",
     page_icon="🐍",
     layout="centered"
 )
 
-# 헤더 스타일
 st.markdown("""
     <style>
     .main-title {
@@ -30,464 +28,516 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown('<div class="main-title">🐍 스네이크 게임 🍎</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">⌨️ 방향키 또는 WASD로 조작! 스페이스바로 시작! 🎮</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">⌨️ 방향키 또는 WASD | 스페이스바로 시작!</div>', unsafe_allow_html=True)
 
-# 게임 HTML/CSS/JavaScript
 game_html = """
 <!DOCTYPE html>
 <html>
 <head>
 <style>
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
-    
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
     body {
         display: flex;
-        flex-direction: column;
         align-items: center;
         justify-content: center;
-        background: linear-gradient(135deg, #74b9ff 0%, #a29bfe 100%);
-        min-height: 600px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 650px;
         font-family: 'Arial', sans-serif;
-        padding: 20px;
     }
-    
+
     .game-container {
         background: white;
-        border-radius: 20px;
+        border-radius: 24px;
         padding: 25px;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        box-shadow: 0 25px 70px rgba(0,0,0,0.4);
         text-align: center;
     }
-    
+
     .score-board {
         display: flex;
-        justify-content: space-around;
-        margin-bottom: 15px;
+        justify-content: center;
         gap: 20px;
+        margin-bottom: 15px;
     }
-    
+
     .score-item {
         background: linear-gradient(135deg, #ffeaa7, #fab1a0);
-        padding: 10px 20px;
-        border-radius: 12px;
-        font-size: 1.2em;
-        font-weight: bold;
-        color: #2d3436;
-        min-width: 120px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
-    
-    canvas {
-        background: #aad751;
-        border-radius: 15px;
-        box-shadow: inset 0 0 20px rgba(0,0,0,0.2);
-        display: block;
-    }
-    
-    .controls {
-        margin-top: 15px;
-        color: #636e72;
-        font-size: 0.95em;
-    }
-    
-    .game-message {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: rgba(45, 52, 54, 0.95);
-        color: white;
-        padding: 30px 50px;
-        border-radius: 20px;
-        font-size: 1.5em;
-        font-weight: bold;
-        text-align: center;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        display: none;
-        z-index: 100;
-    }
-    
-    .game-message.show {
-        display: block;
-        animation: popIn 0.3s ease-out;
-    }
-    
-    @keyframes popIn {
-        0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
-        100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-    }
-    
-    .canvas-wrapper {
-        position: relative;
-        display: inline-block;
-    }
-    
-    .btn {
-        background: linear-gradient(135deg, #6c5ce7, #a29bfe);
-        color: white;
-        border: none;
-        padding: 12px 30px;
-        border-radius: 25px;
+        padding: 10px 25px;
+        border-radius: 50px;
         font-size: 1.1em;
         font-weight: bold;
+        color: #2d3436;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    canvas {
+        border-radius: 16px;
+        display: block;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.2);
         cursor: pointer;
-        margin-top: 15px;
-        box-shadow: 0 5px 15px rgba(108, 92, 231, 0.4);
-        transition: all 0.2s;
     }
-    
-    .btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(108, 92, 231, 0.6);
+
+    .controls {
+        margin-top: 12px;
+        color: #636e72;
+        font-size: 0.9em;
     }
-    
-    .speed-control {
-        margin-top: 15px;
+
+    .speed-wrap {
+        margin-top: 12px;
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 10px;
-    }
-    
-    .speed-control label {
         font-weight: bold;
         color: #2d3436;
+    }
+
+    input[type=range] {
+        width: 140px;
+        accent-color: #6c5ce7;
+    }
+
+    .btn {
+        background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+        color: white;
+        border: none;
+        padding: 10px 28px;
+        border-radius: 50px;
+        font-size: 1em;
+        font-weight: bold;
+        cursor: pointer;
+        margin-top: 12px;
+        box-shadow: 0 5px 15px rgba(108,92,231,0.4);
+        transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(108,92,231,0.6);
+    }
+
+    .overlay {
+        position: absolute;
+        inset: 0;
+        border-radius: 16px;
+        background: rgba(0,0,0,0.55);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.4em;
+        font-weight: bold;
+        text-align: center;
+        line-height: 1.8;
+        backdrop-filter: blur(3px);
+        transition: opacity 0.3s;
+    }
+
+    .overlay.hidden { display: none; }
+
+    .canvas-wrap {
+        position: relative;
+        display: inline-block;
     }
 </style>
 </head>
 <body>
-    <div class="game-container">
-        <div class="score-board">
-            <div class="score-item">🏆 점수: <span id="score">0</span></div>
-            <div class="score-item">⭐ 최고: <span id="highScore">0</span></div>
-        </div>
-        
-        <div class="canvas-wrapper">
-            <canvas id="gameCanvas" width="400" height="400"></canvas>
-            <div id="gameMessage" class="game-message">
-                <div id="messageText">🎮 스페이스바를 눌러 시작!</div>
-            </div>
-        </div>
-        
-        <div class="controls">
-            ⌨️ <b>방향키</b> 또는 <b>WASD</b>로 이동 | <b>스페이스바</b>로 시작/일시정지
-        </div>
-        
-        <div class="speed-control">
-            <label>⚡ 속도:</label>
-            <input type="range" id="speedSlider" min="50" max="200" value="120" step="10">
-            <span id="speedValue">보통</span>
-        </div>
-        
-        <button class="btn" onclick="resetGame()">🔄 새 게임</button>
+<div class="game-container">
+    <div class="score-board">
+        <div class="score-item">🏆 점수: <span id="score">0</span></div>
+        <div class="score-item">⭐ 최고: <span id="high">0</span></div>
     </div>
 
+    <div class="canvas-wrap">
+        <canvas id="c" width="420" height="420"></canvas>
+        <div class="overlay" id="overlay">
+            🐍 스네이크 게임<br>
+            <span style="font-size:0.65em; opacity:0.85;">스페이스바 또는 화면 클릭으로 시작</span>
+        </div>
+    </div>
+
+    <div class="controls">⌨️ 방향키 / WASD 조작 &nbsp;|&nbsp; Space 시작·일시정지</div>
+
+    <div class="speed-wrap">
+        ⚡ 속도:
+        <input type="range" id="spd" min="1" max="5" value="3" step="1">
+        <span id="spdLabel">보통</span>
+    </div>
+
+    <button class="btn" onclick="resetGame()">🔄 새 게임</button>
+</div>
+
 <script>
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
+// ── 캔버스 기본 설정 ──────────────────────────────────────
+const canvas  = document.getElementById('c');
+const ctx     = canvas.getContext('2d');
+const overlay = document.getElementById('overlay');
 const scoreEl = document.getElementById('score');
-const highScoreEl = document.getElementById('highScore');
-const messageEl = document.getElementById('gameMessage');
-const messageTextEl = document.getElementById('messageText');
-const speedSlider = document.getElementById('speedSlider');
-const speedValueEl = document.getElementById('speedValue');
+const highEl  = document.getElementById('high');
+const spdSlider = document.getElementById('spd');
+const spdLabel  = document.getElementById('spdLabel');
 
-const GRID_SIZE = 20;
-const TILE_COUNT = canvas.width / GRID_SIZE;
+const W = canvas.width;
+const H = canvas.height;
+const COLS = 21;           // 격자 수
+const ROWS = 21;
+const TW = W / COLS;       // 타일 너비 (픽셀)
+const TH = H / ROWS;
 
-let snake = [{x: 10, y: 10}];
-let velocity = {x: 0, y: 0};
-let food = {x: 15, y: 15};
-let score = 0;
-let highScore = parseInt(localStorage.getItem('snakeHighScore') || '0');
-let gameRunning = false;
-let gamePaused = false;
-let gameOver = false;
-let gameSpeed = 120;
-let lastTime = 0;
-let nextVelocity = {x: 0, y: 0};
+// ── 속도 설정 ─────────────────────────────────────────────
+// stepInterval: 뱀이 한 칸 이동하는 데 걸리는 ms
+const SPEEDS = [220, 160, 110, 75, 45];
+const SPEED_LABELS = ['🐢 느림', '🚶 천천히', '⚡ 보통', '🏃 빠름', '🔥 매우 빠름'];
+let stepInterval = SPEEDS[2];
 
-highScoreEl.textContent = highScore;
-
-// 속도 슬라이더
-speedSlider.addEventListener('input', (e) => {
-    gameSpeed = 250 - parseInt(e.target.value);
-    if (gameSpeed < 80) speedValueEl.textContent = '🔥 빠름';
-    else if (gameSpeed < 130) speedValueEl.textContent = '⚡ 보통';
-    else speedValueEl.textContent = '🐢 느림';
+spdSlider.addEventListener('input', () => {
+    const idx = parseInt(spdSlider.value) - 1;
+    stepInterval = SPEEDS[idx];
+    spdLabel.textContent = SPEED_LABELS[idx];
 });
 
-function generateFood() {
-    while (true) {
-        food = {
-            x: Math.floor(Math.random() * TILE_COUNT),
-            y: Math.floor(Math.random() * TILE_COUNT)
-        };
-        // 뱀 몸과 겹치지 않게
-        let onSnake = snake.some(seg => seg.x === food.x && seg.y === food.y);
-        if (!onSnake) break;
+// ── 게임 상태 ─────────────────────────────────────────────
+let snake, dir, nextDir, food, score, highScore, particles;
+let running, paused, dead;
+
+// 보간용 (부드러운 이동)
+let progress   = 0;   // 0 ~ 1  (현재 칸 → 다음 칸 진행률)
+let lastStepTs = 0;   // 마지막 스텝 타임스탬프
+
+highScore = parseInt(localStorage.getItem('snakeHi') || '0');
+highEl.textContent = highScore;
+
+// ── 초기화 ────────────────────────────────────────────────
+function resetGame() {
+    snake    = [{x:10, y:10}, {x:9, y:10}, {x:8, y:10}];
+    dir      = {x:1,  y:0};
+    nextDir  = {x:1,  y:0};
+    score    = 0;
+    particles = [];
+    running  = false;
+    paused   = false;
+    dead     = false;
+    progress = 0;
+    scoreEl.textContent = 0;
+    placeFood();
+    showOverlay('🐍 스네이크 게임<br><span style="font-size:0.65em;opacity:0.85;">스페이스바 또는 화면 클릭으로 시작</span>');
+    requestAnimationFrame(loop);
+}
+
+function placeFood() {
+    let pos;
+    do {
+        pos = {x: Math.floor(Math.random()*COLS), y: Math.floor(Math.random()*ROWS)};
+    } while (snake.some(s => s.x===pos.x && s.y===pos.y));
+    food = pos;
+}
+
+// ── 오버레이 ──────────────────────────────────────────────
+function showOverlay(html) {
+    overlay.innerHTML = html;
+    overlay.classList.remove('hidden');
+}
+function hideOverlay() {
+    overlay.classList.add('hidden');
+}
+
+// ── 파티클 (먹을 때 반짝) ─────────────────────────────────
+function spawnParticles(gx, gy) {
+    const cx = (gx + 0.5) * TW;
+    const cy = (gy + 0.5) * TH;
+    for (let i = 0; i < 14; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const spd   = 1.5 + Math.random() * 3;
+        particles.push({
+            x: cx, y: cy,
+            vx: Math.cos(angle) * spd,
+            vy: Math.sin(angle) * spd,
+            life: 1,
+            decay: 0.03 + Math.random() * 0.03,
+            r: Math.random() * 5 + 3,
+            color: ['#e74c3c','#ff9f43','#ffeaa7','#55efc4'][Math.floor(Math.random()*4)]
+        });
     }
 }
 
-function drawGame() {
-    // 배경 - 체크무늬
-    for (let i = 0; i < TILE_COUNT; i++) {
-        for (let j = 0; j < TILE_COUNT; j++) {
-            ctx.fillStyle = (i + j) % 2 === 0 ? '#aad751' : '#a2d149';
-            ctx.fillRect(i * GRID_SIZE, j * GRID_SIZE, GRID_SIZE, GRID_SIZE);
-        }
-    }
-    
-    // 음식 (사과)
-    ctx.fillStyle = '#e74c3c';
-    ctx.beginPath();
-    ctx.arc(
-        food.x * GRID_SIZE + GRID_SIZE/2,
-        food.y * GRID_SIZE + GRID_SIZE/2,
-        GRID_SIZE/2 - 2,
-        0, Math.PI * 2
-    );
-    ctx.fill();
-    // 사과 잎
-    ctx.fillStyle = '#27ae60';
-    ctx.fillRect(
-        food.x * GRID_SIZE + GRID_SIZE/2 - 2,
-        food.y * GRID_SIZE + 2,
-        4, 5
-    );
-    
-    // 뱀 그리기
-    snake.forEach((segment, index) => {
-        if (index === 0) {
-            // 머리
-            ctx.fillStyle = '#4a69bd';
-            ctx.fillRect(
-                segment.x * GRID_SIZE + 1,
-                segment.y * GRID_SIZE + 1,
-                GRID_SIZE - 2, GRID_SIZE - 2
-            );
-            // 눈
-            ctx.fillStyle = 'white';
-            let eyeOffsetX1, eyeOffsetY1, eyeOffsetX2, eyeOffsetY2;
-            if (velocity.x === 1) {
-                eyeOffsetX1 = 13; eyeOffsetY1 = 5;
-                eyeOffsetX2 = 13; eyeOffsetY2 = 13;
-            } else if (velocity.x === -1) {
-                eyeOffsetX1 = 3; eyeOffsetY1 = 5;
-                eyeOffsetX2 = 3; eyeOffsetY2 = 13;
-            } else if (velocity.y === -1) {
-                eyeOffsetX1 = 5; eyeOffsetY1 = 3;
-                eyeOffsetX2 = 13; eyeOffsetY2 = 3;
-            } else {
-                eyeOffsetX1 = 5; eyeOffsetY1 = 13;
-                eyeOffsetX2 = 13; eyeOffsetY2 = 13;
-            }
-            ctx.fillRect(segment.x * GRID_SIZE + eyeOffsetX1, segment.y * GRID_SIZE + eyeOffsetY1, 3, 3);
-            ctx.fillRect(segment.x * GRID_SIZE + eyeOffsetX2, segment.y * GRID_SIZE + eyeOffsetY2, 3, 3);
-        } else {
-            // 몸통 - 그라데이션 효과
-            const ratio = index / snake.length;
-            const r = Math.floor(74 - ratio * 20);
-            const g = Math.floor(105 - ratio * 20);
-            const b = Math.floor(189 - ratio * 40);
-            ctx.fillStyle = `rgb(${r},${g},${b})`;
-            ctx.fillRect(
-                segment.x * GRID_SIZE + 2,
-                segment.y * GRID_SIZE + 2,
-                GRID_SIZE - 4, GRID_SIZE - 4
-            );
-        }
+function updateParticles() {
+    particles = particles.filter(p => p.life > 0);
+    particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.12;   // 중력
+        p.life -= p.decay;
+        p.r *= 0.97;
     });
 }
 
-function updateGame() {
-    // 방향 적용 (180도 회전 방지)
-    if (nextVelocity.x !== -velocity.x || nextVelocity.y !== -velocity.y) {
-        velocity = {...nextVelocity};
+function drawParticles() {
+    particles.forEach(p => {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, p.life);
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+    });
+}
+
+// ── 게임 로직: 한 스텝 ────────────────────────────────────
+function step() {
+    // 방향 확정 (180도 반전 금지)
+    if (!(nextDir.x === -dir.x && nextDir.y === -dir.y)) {
+        dir = {...nextDir};
     }
-    
-    if (velocity.x === 0 && velocity.y === 0) return;
-    
-    const head = {x: snake[0].x + velocity.x, y: snake[0].y + velocity.y};
-    
+
+    const head    = snake[0];
+    const newHead = {x: head.x + dir.x, y: head.y + dir.y};
+
     // 벽 충돌
-    if (head.x < 0 || head.x >= TILE_COUNT || head.y < 0 || head.y >= TILE_COUNT) {
-        endGame();
-        return;
+    if (newHead.x < 0 || newHead.x >= COLS || newHead.y < 0 || newHead.y >= ROWS) {
+        gameOver(); return;
     }
-    
-    // 자기 몸 충돌
-    if (snake.some(seg => seg.x === head.x && seg.y === head.y)) {
-        endGame();
-        return;
+    // 자기 몸 충돌 (꼬리는 이번 스텝에 제거되므로 마지막 제외)
+    if (snake.slice(0, -1).some(s => s.x===newHead.x && s.y===newHead.y)) {
+        gameOver(); return;
     }
-    
-    snake.unshift(head);
-    
-    // 음식 먹기
-    if (head.x === food.x && head.y === food.y) {
+
+    const ate = (newHead.x === food.x && newHead.y === food.y);
+    snake.unshift(newHead);
+    if (ate) {
         score += 10;
         scoreEl.textContent = score;
         if (score > highScore) {
             highScore = score;
-            highScoreEl.textContent = highScore;
-            localStorage.setItem('snakeHighScore', highScore);
+            highEl.textContent = highScore;
+            localStorage.setItem('snakeHi', highScore);
         }
-        generateFood();
+        spawnParticles(food.x, food.y);
+        placeFood();
     } else {
         snake.pop();
     }
 }
 
-function gameLoop(currentTime) {
-    if (!gameRunning || gamePaused || gameOver) {
-        drawGame();
-        return;
-    }
-    
-    if (currentTime - lastTime >= gameSpeed) {
-        updateGame();
-        lastTime = currentTime;
-    }
-    
-    drawGame();
-    requestAnimationFrame(gameLoop);
+function gameOver() {
+    dead    = true;
+    running = false;
+    showOverlay(`💥 게임 오버!<br>🏆 ${score}점<br><span style="font-size:0.6em;opacity:0.8;">스페이스바로 다시 시작</span>`);
 }
 
-function startGame() {
-    if (gameOver) {
-        resetGame();
-        return;
-    }
-    if (!gameRunning) {
-        gameRunning = true;
-        gamePaused = false;
-        messageEl.classList.remove('show');
-        if (velocity.x === 0 && velocity.y === 0) {
-            nextVelocity = {x: 1, y: 0};
-        }
-        lastTime = performance.now();
-        requestAnimationFrame(gameLoop);
-    } else {
-        gamePaused = !gamePaused;
-        if (gamePaused) {
-            messageTextEl.innerHTML = '⏸️ 일시정지<br><small>스페이스로 계속</small>';
-            messageEl.classList.add('show');
-        } else {
-            messageEl.classList.remove('show');
-            lastTime = performance.now();
-            requestAnimationFrame(gameLoop);
+// ── 그리기 ────────────────────────────────────────────────
+function drawBg() {
+    for (let x = 0; x < COLS; x++) {
+        for (let y = 0; y < ROWS; y++) {
+            ctx.fillStyle = (x+y)%2===0 ? '#aad751' : '#a2d149';
+            ctx.fillRect(x*TW, y*TH, TW, TH);
         }
     }
 }
 
-function endGame() {
-    gameRunning = false;
-    gameOver = true;
-    messageTextEl.innerHTML = `💥 게임 오버!<br>🏆 ${score}점<br><small>스페이스로 다시 시작</small>`;
-    messageEl.classList.add('show');
+function drawFood() {
+    const cx = (food.x + 0.5) * TW;
+    const cy = (food.y + 0.5) * TH;
+    const r  = TW * 0.42;
+
+    // 사과 몸통
+    ctx.fillStyle = '#e74c3c';
+    ctx.beginPath();
+    ctx.arc(cx, cy + 1, r, 0, Math.PI*2);
+    ctx.fill();
+
+    // 광택
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.beginPath();
+    ctx.ellipse(cx - r*0.28, cy - r*0.28, r*0.28, r*0.18, -Math.PI/5, 0, Math.PI*2);
+    ctx.fill();
+
+    // 잎
+    ctx.fillStyle = '#27ae60';
+    ctx.beginPath();
+    ctx.ellipse(cx + 2, cy - r - 1, 5, 3, Math.PI/4, 0, Math.PI*2);
+    ctx.fill();
+
+    // 꼭지
+    ctx.strokeStyle = '#795548';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - r + 1);
+    ctx.lineTo(cx + 2, cy - r - 4);
+    ctx.stroke();
 }
 
-function resetGame() {
-    snake = [{x: 10, y: 10}];
-    velocity = {x: 0, y: 0};
-    nextVelocity = {x: 0, y: 0};
-    score = 0;
-    scoreEl.textContent = 0;
-    gameRunning = false;
-    gamePaused = false;
-    gameOver = false;
-    generateFood();
-    messageTextEl.innerHTML = '🎮 스페이스바로 시작!<br><small>방향키로 조작</small>';
-    messageEl.classList.add('show');
-    drawGame();
+// 부드러운 뱀 그리기 ── 핵심 부분!
+function drawSnake(t) {
+    // t = progress (0~1): 이전 칸 → 현재 칸 이동 비율
+    const len = snake.length;
+
+    // 각 세그먼트의 실제 픽셀 위치 계산 (보간 적용)
+    // snake[0] = 새 머리, snake[1] = 이전 머리 위치 …
+    // progress=0 이면 이전 위치, progress=1 이면 새 위치
+    function segPos(i) {
+        // 현재 세그먼트와 "이전" 세그먼트(한 스텝 전에 이 자리에 있던 것)
+        const cur  = snake[i];
+        const prev = snake[i + 1] || snake[i]; // 꼬리 끝
+        return {
+            x: (prev.x + (cur.x - prev.x) * t + 0.5) * TW,
+            y: (prev.y + (cur.y - prev.y) * t + 0.5) * TH
+        };
+    }
+
+    // 경계선(path) 그리기
+    // 몸통 두께
+    const thickness = TW * 0.72;
+
+    ctx.lineWidth   = thickness;
+    ctx.lineJoin    = 'round';
+    ctx.lineCap     = 'round';
+
+    // 그라데이션 색 (머리 → 꼬리)
+    const grad = ctx.createLinearGradient(
+        segPos(0).x, segPos(0).y,
+        segPos(len-1).x, segPos(len-1).y
+    );
+    grad.addColorStop(0,   '#2980b9');
+    grad.addColorStop(0.4, '#3498db');
+    grad.addColorStop(1,   '#74b9ff');
+
+    ctx.strokeStyle = grad;
+    ctx.beginPath();
+    const p0 = segPos(0);
+    ctx.moveTo(p0.x, p0.y);
+    for (let i = 1; i < len; i++) {
+        const p = segPos(i);
+        ctx.lineTo(p.x, p.y);
+    }
+    ctx.stroke();
+
+    // 머리 (더 진한 원)
+    const head = segPos(0);
+    ctx.fillStyle = '#1a6fa3';
+    ctx.beginPath();
+    ctx.arc(head.x, head.y, thickness/2, 0, Math.PI*2);
+    ctx.fill();
+
+    // 눈
+    const eyeR = TW * 0.1;
+    const d    = dir;
+    // 방향에 수직인 벡터
+    const perp = {x: -d.y, y: d.x};
+    const eyeDist  = thickness * 0.3;
+    const eyeFront = thickness * 0.22;
+
+    for (let side of [-1, 1]) {
+        const ex = head.x + d.x * eyeFront + perp.x * side * eyeDist;
+        const ey = head.y + d.y * eyeFront + perp.y * side * eyeDist;
+        // 흰자
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.arc(ex, ey, eyeR, 0, Math.PI*2);
+        ctx.fill();
+        // 눈동자
+        ctx.fillStyle = '#2d3436';
+        ctx.beginPath();
+        ctx.arc(ex + d.x*eyeR*0.3, ey + d.y*eyeR*0.3, eyeR*0.5, 0, Math.PI*2);
+        ctx.fill();
+    }
 }
 
-// 키보드 이벤트
-document.addEventListener('keydown', (e) => {
-    const key = e.key.toLowerCase();
-    
-    // 스페이스바 - 시작/일시정지
+// ── 메인 루프 ─────────────────────────────────────────────
+function loop(ts) {
+    // 배경
+    drawBg();
+
+    if (running && !paused) {
+        // 경과 시간 → progress 계산
+        const elapsed = ts - lastStepTs;
+        progress = Math.min(elapsed / stepInterval, 1);
+
+        // 한 스텝 완료 → 실제 이동
+        if (progress >= 1) {
+            step();
+            if (dead) { drawFood(); drawSnake(1); drawParticles(); return; }
+            lastStepTs = ts;
+            progress   = 0;
+        }
+    }
+
+    drawFood();
+    drawSnake(running && !paused ? progress : 1);
+    updateParticles();
+    drawParticles();
+
+    requestAnimationFrame(loop);
+}
+
+// ── 입력 처리 ─────────────────────────────────────────────
+document.addEventListener('keydown', e => {
     if (e.key === ' ') {
         e.preventDefault();
-        startGame();
+        if (dead) { resetGame(); return; }
+        if (!running) {
+            running = true; paused = false;
+            lastStepTs = performance.now();
+            hideOverlay();
+        } else {
+            paused = !paused;
+            if (paused) showOverlay('⏸️ 일시정지<br><span style="font-size:0.65em;opacity:0.85;">스페이스바로 계속</span>');
+            else { hideOverlay(); lastStepTs = performance.now(); }
+        }
         return;
     }
-    
-    if (!gameRunning || gamePaused || gameOver) return;
-    
-    // 방향키 + WASD
-    if ((e.key === 'ArrowUp' || key === 'w') && velocity.y !== 1) {
-        nextVelocity = {x: 0, y: -1};
-        e.preventDefault();
-    } else if ((e.key === 'ArrowDown' || key === 's') && velocity.y !== -1) {
-        nextVelocity = {x: 0, y: 1};
-        e.preventDefault();
-    } else if ((e.key === 'ArrowLeft' || key === 'a') && velocity.x !== 1) {
-        nextVelocity = {x: -1, y: 0};
-        e.preventDefault();
-    } else if ((e.key === 'ArrowRight' || key === 'd') && velocity.x !== -1) {
-        nextVelocity = {x: 1, y: 0};
-        e.preventDefault();
+    const map = {
+        ArrowUp:    {x:0, y:-1}, w: {x:0, y:-1},
+        ArrowDown:  {x:0, y:1},  s: {x:0, y:1},
+        ArrowLeft:  {x:-1,y:0},  a: {x:-1,y:0},
+        ArrowRight: {x:1, y:0},  d: {x:1, y:0}
+    };
+    const v = map[e.key] || map[e.key.toLowerCase()];
+    if (v) { e.preventDefault(); nextDir = v; }
+});
+
+canvas.addEventListener('click', () => {
+    if (dead) { resetGame(); return; }
+    if (!running) {
+        running = true; paused = false;
+        lastStepTs = performance.now();
+        hideOverlay();
     }
 });
 
-// 캔버스 클릭 시 포커스
-canvas.addEventListener('click', () => {
-    canvas.focus();
-});
-
-// 초기 화면
-generateFood();
-drawGame();
-messageEl.classList.add('show');
-
-// iframe 포커스 자동 설정
 window.focus();
 document.body.tabIndex = 0;
 document.body.focus();
+
+// 시작
+resetGame();
 </script>
 </body>
 </html>
 """
 
-# 게임 실행
-components.html(game_html, height=650)
+components.html(game_html, height=680)
 
-# 안내 메시지
-st.info("💡 **팁**: 게임이 작동하지 않으면 게임 화면을 한 번 **클릭**한 후 키를 눌러주세요!")
+st.info("💡 게임 화면을 한 번 클릭한 후 키보드를 조작하세요!")
 
-# 게임 설명
-with st.expander("📖 게임 방법 보기"):
+with st.expander("📖 게임 방법"):
     st.markdown("""
-    ### 🎯 게임 규칙
-    - 🍎 **빨간 사과**를 먹으면 10점을 얻고 뱀이 길어져요!
-    - 🧱 **벽**에 부딪히면 게임 오버! 💥
-    - 🐍 **자기 몸**에 부딪혀도 게임 오버! 😱
-    
-    ### 🎮 조작법
     | 키 | 동작 |
     |---|---|
-    | ⬆️ ⬇️ ⬅️ ➡️ 또는 **WASD** | 방향 조작 |
+    | ⬆️⬇️⬅️➡️ / WASD | 방향 조작 |
     | **스페이스바** | 시작 / 일시정지 |
-    | **속도 슬라이더** | 게임 속도 조절 |
-    | **새 게임 버튼** | 게임 리셋 |
+    | **속도 슬라이더** | 1~5단계 속도 |
+    | **새 게임 버튼** | 리셋 |
     
-    ### ✨ 특징
-    - 🏆 **최고 점수 저장**: 브라우저에 자동 저장됩니다!
-    - 🎨 **체크무늬 보드**: 진짜 구글 스네이크처럼!
-    - 👀 **눈이 있는 뱀**: 방향에 따라 눈도 움직여요!
-    - 🌈 **그라데이션 몸통**: 머리부터 꼬리까지 색이 변해요!
+    ### ✨ 부드러운 움직임의 비밀
+    - 🎯 **보간(Interpolation)**: 격자 이동 사이를 픽셀 단위로 채워요!
+    - 🔴 **파티클 효과**: 사과를 먹으면 반짝 터져요!
+    - 👀 **눈동자**: 진행 방향 따라 눈이 움직여요!
+    - 💾 **최고점수 자동 저장**
     """)
 
-# 푸터
 st.markdown("---")
-st.markdown("""
-    <div style="text-align:center; color:#aaa; padding:20px;">
-        Made with 💚 for 당곡고 학생들 | 🎓 재미있게 플레이하세요!
-    </div>
-""", unsafe_allow_html=True)
+st.markdown('<div style="text-align:center;color:#aaa;">Made with 💚 for 당곡고 학생들</div>', unsafe_allow_html=True)
